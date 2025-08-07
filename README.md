@@ -122,9 +122,9 @@ This project is licensed under the MIT License.
 
 ## 👤 Author
 
-**Your Name**  
+**Your Name**  B Hema Swarup improvised by AI
 ## To connect with me in any other platforms click here to checkout my social media platforms
-GitHub: [@Swarup-git-hub]((https://github.com/Swarup-git-hub))
+GitHub: [@Swarup-git-hub](https://github.com/Swarup-git-hub)
 
 ---
 
