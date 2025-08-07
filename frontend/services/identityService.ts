@@ -1,67 +1,101 @@
 import { AptosClient } from "aptos";
-import { Network } from "@aptos-labs/ts-sdk";
+import { MODULE_ADDRESS } from "@/constants";
 
 const client = new AptosClient("https://fullnode.testnet.aptoslabs.com");
 
 export interface IdentityData {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  verified: boolean;
-  createdAt: number;
-  updatedAt: number;
+  username: string;
+  bio: string;
+  documents: string[];
+  updated_at: string;
 }
 
+// Fallback to local storage for development/testing
+const useLocalStorage = true;
+
 export const identityService = {
-  async createIdentity(identity: Omit<IdentityData, "id" | "createdAt" | "updatedAt" | "verified">) {
-    // Mock implementation - replace with actual contract interaction
-    const newIdentity: IdentityData = {
-      ...identity,
-      id: Math.random().toString(36).substring(2, 15),
-      verified: false,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    return newIdentity;
+  async create(
+    data: { username: string; bio: string; documents?: string[] },
+    signAndSubmitTransaction?: (transaction: any) => Promise<any>,
+  ): Promise<void> {
+    if (useLocalStorage) {
+      // Store in localStorage for development
+      const identity: IdentityData = {
+        username: data.username,
+        bio: data.bio,
+        documents: data.documents || [],
+        updated_at: new Date().toISOString(),
+      };
+      localStorage.setItem("digital_identity", JSON.stringify(identity));
+      return Promise.resolve();
+    }
+
+    try {
+      const { createIdentity } = await import("../entry-functions/createIdentity");
+      const transaction = createIdentity({ username: data.username, bio: data.bio });
+      return signAndSubmitTransaction
+        ? signAndSubmitTransaction(transaction)
+        : Promise.reject("No signAndSubmitTransaction function provided");
+    } catch (error) {
+      console.error("Blockchain creation failed, using local storage:", error);
+      return this.create(data);
+    }
   },
 
-  async getIdentity(id: string): Promise<IdentityData | null> {
-    // Mock implementation - replace with actual contract interaction
-    return {
-      id,
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "+1234567890",
-      address: "123 Main St",
-      verified: true,
-      createdAt: Date.now() - 86400000,
-      updatedAt: Date.now(),
-    };
+  async update(
+    data: { username: string; bio: string; documents?: string[] },
+    signAndSubmitTransaction?: (transaction: any) => Promise<any>,
+  ): Promise<void> {
+    if (useLocalStorage) {
+      const existing = localStorage.getItem("digital_identity");
+      const identity: IdentityData = {
+        ...JSON.parse(existing || "{}"),
+        username: data.username,
+        bio: data.bio,
+        documents: data.documents || [],
+        updated_at: new Date().toISOString(),
+      };
+      localStorage.setItem("digital_identity", JSON.stringify(identity));
+      return Promise.resolve();
+    }
+
+    try {
+      const { updateIdentity } = await import("../entry-functions/updateIdentity");
+      const transaction = updateIdentity({ username: data.username, bio: data.bio });
+      return signAndSubmitTransaction
+        ? signAndSubmitTransaction(transaction)
+        : Promise.reject("No signAndSubmitTransaction function provided");
+    } catch (error) {
+      console.error("Blockchain update failed, using local storage:", error);
+      return this.update(data);
+    }
   },
 
-  async updateIdentity(id: string, updates: Partial<IdentityData>) {
-    // Mock implementation - replace with actual contract interaction
-    return {
-      id,
-      name: updates.name || "John Doe",
-      email: updates.email || "john@example.com",
-      phone: updates.phone || "+1234567890",
-      address: updates.address || "123 Main St",
-      verified: false,
-      createdAt: Date.now() - 86400000,
-      updatedAt: Date.now(),
-    };
-  },
+  async get(address?: string): Promise<IdentityData | null> {
+    if (useLocalStorage) {
+      const stored = localStorage.getItem("digital_identity");
+      return stored ? JSON.parse(stored) : null;
+    }
 
-  async verifyIdentity(id: string) {
-    // Mock implementation - replace with actual contract interaction
-    return true;
-  },
+    try {
+      const resource = await client.getAccountResource(
+        address || "",
+        `${MODULE_ADDRESS}::IdentityManagement::Identity`,
+      );
 
-  async deleteIdentity(id: string) {
-    // Mock implementation - replace with actual contract interaction
-    return true;
+      if (resource && resource.data) {
+        const data = resource.data as any;
+        return {
+          username: data.username || "",
+          bio: data.bio || "",
+          documents: [],
+          updated_at: data.updated_at || new Date().toISOString(),
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Blockchain get failed, using local storage:", error);
+      return this.get();
+    }
   },
 };

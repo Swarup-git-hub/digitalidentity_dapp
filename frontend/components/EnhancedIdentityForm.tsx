@@ -1,17 +1,26 @@
 import { useState } from "react";
 import { useIdentity } from "../hooks/useIdentity";
 import { motion } from "framer-motion";
+import { Paperclip } from "lucide-react";
+import FileUpload from "./FileUpload";
 
 export function EnhancedIdentityForm() {
   const { identity, busy, save } = useIdentity();
   const [form, setForm] = useState({
     username: identity?.username ?? "",
     bio: identity?.bio ?? "",
+    documents: identity?.documents ?? [],
   });
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    save(form);
+
+    // Process uploaded files
+    const fileNames = uploadedFiles.map((file) => file.name);
+    const allDocuments = [...form.documents, ...fileNames];
+
+    save({ ...form, documents: allDocuments });
   };
 
   return (
@@ -31,7 +40,7 @@ export function EnhancedIdentityForm() {
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
           <input
@@ -54,6 +63,20 @@ export function EnhancedIdentityForm() {
             placeholder="Tell us about yourself..."
             rows={4}
             maxLength={200}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            <Paperclip className="inline-block w-4 h-4 mr-2" />
+            Documents & Files
+          </label>
+          <FileUpload
+            onFilesChange={setUploadedFiles}
+            maxFiles={3}
+            maxSize={5}
+            acceptedTypes={[".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".gif"]}
+            existingFiles={form.documents}
           />
         </div>
       </div>

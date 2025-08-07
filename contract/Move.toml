@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-DigitalID = "0xa28b6eb4eba4509b7c43a4a310bb12ee856691f99a27e251fb531a0f22dcd6b6"
+DigitalID = "60d8782825dc34b9b621c3ba1572844306c5a6107ce460d5e8963a7c5b55381e"
 
 [dependencies]
 AptosFramework = { git = "https://github.com/aptos-labs/aptos-framework.git", rev = "mainnet", subdir = "aptos-framework" }
